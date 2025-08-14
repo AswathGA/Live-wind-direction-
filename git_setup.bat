@@ -5,29 +5,37 @@ echo.
 REM Navigate to project directory
 cd /d "c:\Users\gillxpc\Desktop\wind"
 
+REM Set Git path
+set GIT_PATH="C:\Program Files\Git\bin\git.exe"
+
+REM Configure Git user (change email to your actual GitHub email)
+echo Configuring Git user...
+%GIT_PATH% config --global user.name "AswathGA"
+%GIT_PATH% config --global user.email "your-email@example.com"
+
 REM Initialize Git repository
 echo Initializing Git repository...
-git init
+%GIT_PATH% init
 
 REM Add all files
 echo Adding all files to Git...
-git add .
+%GIT_PATH% add .
 
 REM Commit with descriptive message
 echo Creating initial commit...
-git commit -m "Initial commit: Professional wind monitoring system with real-time windrose visualization"
+%GIT_PATH% commit -m "Initial commit: Professional wind monitoring system with real-time windrose visualization and multi-anemometer support"
 
 REM Set main branch
 echo Setting main branch...
-git branch -M main
+%GIT_PATH% branch -M main
 
 REM Add remote origin
 echo Adding GitHub remote...
-git remote add origin https://github.com/AswathGA/Live-wind-direction-.git
+%GIT_PATH% remote add origin https://github.com/AswathGA/Live-wind-direction-.git
 
 REM Push to GitHub
 echo Pushing to GitHub...
-git push -u origin main
+%GIT_PATH% push -u origin main
 
 echo.
 echo Git setup complete!
