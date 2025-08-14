@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wind Monitor - Windrose Diagram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .anemometer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .anemometer-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        .anemometer-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .windrose-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 20px;
+        }
+        
+        .compass-circle {
+            width: 100%;
+            height: 100%;
+            border: 3px solid #333;
+            border-radius: 50%;
+            position: relative;
+            background: radial-gradient(circle, #e8f4fd 0%, #b8e6ff 100%);
+        }
+        
+        .compass-directions {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .direction-label {
+            position: absolute;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .direction-label.north { top: 5px; left: 50%; transform: translateX(-50%); }
+        .direction-label.east { right: 5px; top: 50%; transform: translateY(-50%); }
+        .direction-label.south { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        .direction-label.west { left: 5px; top: 50%; transform: translateY(-50%); }
+        
+        .wind-needle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 120px;
+            background: linear-gradient(to top, #ff4444 0%, #ff6666 50%, #ffaaaa 100%);
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(0deg);
+            transition: transform 0.5s ease-in-out;
+            border-radius: 2px;
+            z-index: 10;
+        }
+        
+        .wind-needle::after {
+            content: '';
+            position: absolute;
+            top: -8px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 16px solid #ff2222;
+            transform: translateX(-50%);
+        }
+        
+        .center-dot {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+        }
+        
+        .wind-data {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: left;
+        }
+        
+        .wind-data .data-item:nth-child(5) {
+            grid-column: 1 / -1; /* Span across both columns for the 5th item */
+        }
+        
+        .data-item {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .data-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+        
+        .data-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .speed-rings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .speed-ring {
+            border: 1px dashed #666;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .ring-1 { width: 60px; height: 60px; opacity: 0.3; }
+        .ring-2 { width: 120px; height: 120px; opacity: 0.3; }
+        .ring-3 { width: 180px; height: 180px; opacity: 0.3; }
+        .ring-4 { width: 240px; height: 240px; opacity: 0.3; }
+        
+        .last-update {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .update-details {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        
+        .update-detail {
+            text-align: center;
+        }
+        
+        .update-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+        
+        .update-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .no-data {
+            color: #999;
+            font-style: italic;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .degree-markers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .degree-mark {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: #666;
+            top: 0;
+            left: 50%;
+            transform-origin: 50% 150px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wind Monitor - Real-time Windrose Diagram</h1>
+        <div id="anemometer-grid" class="anemometer-grid">
+            <!-- Anemometer cards will be dynamically generated here -->
+        </div>
+        <div class="last-update" id="last-update">
+            <div>Last updated: <span id="update-time">-</span></div>
+            <div class="update-details">
+                <div class="update-detail">
+                    <div class="update-label">Connection Status</div>
+                    <div class="update-value" id="connection-status">Checking...</div>
+                </div>
+                <div class="update-detail">
+                    <div class="update-label">Active Anemometers</div>
+                    <div class="update-value" id="active-count">0</div>
+                </div>
+                <div class="update-detail">
+                    <div class="update-label">Last Data Time</div>
+                    <div class="update-value" id="data-time">-</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentData = {};
+        let isInitialized = false;
+
+        function createWindroseCard(anemometerId, data) {
+            const windDirection = data.wind_direction || 0;
+            const windSpeed = data.wind_speed || 0;
+            const port = data.port || 'Unknown';
+            const temperature = data.temperature || 0;
+            
+            const cardId = `anemometer-${anemometerId}-${port.replace(':', '')}`;
+            
+            return `
+                <div class="anemometer-card" id="${cardId}">
+                    <div class="anemometer-title">
+                        Anemometer ${anemometerId} (${port})
+                    </div>
+                    <div class="windrose-container">
+                        <div class="compass-circle">
+                            <!-- Speed rings -->
+                            <div class="speed-rings">
+                                <div class="speed-ring ring-1"></div>
+                                <div class="speed-ring ring-2"></div>
+                                <div class="speed-ring ring-3"></div>
+                                <div class="speed-ring ring-4"></div>
+                            </div>
+                            
+                            <!-- Degree markers -->
+                            <div class="degree-markers">
+                                ${Array.from({length: 36}, (_, i) => {
+                                    const angle = i * 10;
+                                    return `<div class="degree-mark" style="transform: translateX(-50%) rotate(${angle}deg);"></div>`;
+                                }).join('')}
+                            </div>
+                            
+                            <!-- Compass directions -->
+                            <div class="compass-directions">
+                                <div class="direction-label north">N</div>
+                                <div class="direction-label east">E</div>
+                                <div class="direction-label south">S</div>
+                                <div class="direction-label west">W</div>
+                            </div>
+                            
+                            <!-- Wind needle -->
+                            <div class="wind-needle" id="needle-${cardId}" style="transform: translate(-50%, -100%) rotate(${windDirection}deg);"></div>
+                            <div class="center-dot"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="wind-data">
+                        <div class="data-item">
+                            <div class="data-label">Wind Speed</div>
+                            <div class="data-value" id="speed-${cardId}">${windSpeed.toFixed(2)} m/s</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Wind Direction</div>
+                            <div class="data-value" id="direction-${cardId}">${windDirection.toFixed(1)}°</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Temperature</div>
+                            <div class="data-value" id="temp-${cardId}">${temperature}°C</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Components (U,V,W)</div>
+                            <div class="data-value" id="components-${cardId}">${data.u_component?.toFixed(2) || 0}, ${data.v_component?.toFixed(2) || 0}, ${data.w_component?.toFixed(2) || 0}</div>
+                        </div>
+                        <div class="data-item">
+                            <div class="data-label">Last Update</div>
+                            <div class="data-value" id="timestamp-${cardId}">${new Date(data.timestamp).toLocaleTimeString()}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateNeedleAndData(anemometerId, port, data) {
+            const cardId = `anemometer-${anemometerId}-${port.replace(':', '')}`;
+            const needle = document.getElementById(`needle-${cardId}`);
+            const speedElement = document.getElementById(`speed-${cardId}`);
+            const directionElement = document.getElementById(`direction-${cardId}`);
+            const tempElement = document.getElementById(`temp-${cardId}`);
+            const componentsElement = document.getElementById(`components-${cardId}`);
+            const timestampElement = document.getElementById(`timestamp-${cardId}`);
+            
+            if (needle && speedElement && directionElement) {
+                // Update needle position with smooth transition
+                needle.style.transform = `translate(-50%, -100%) rotate(${data.wind_direction || 0}deg)`;
+                
+                // Update data values
+                speedElement.textContent = `${(data.wind_speed || 0).toFixed(2)} m/s`;
+                directionElement.textContent = `${(data.wind_direction || 0).toFixed(1)}°`;
+                tempElement.textContent = `${data.temperature || 0}°C`;
+                componentsElement.textContent = `${data.u_component?.toFixed(2) || 0}, ${data.v_component?.toFixed(2) || 0}, ${data.w_component?.toFixed(2) || 0}`;
+                timestampElement.textContent = new Date(data.timestamp).toLocaleTimeString();
+                
+                return true; // Successfully updated
+            }
+            return false; // Card doesn't exist, needs to be created
+        }
+
+        function updateWindData() {
+            fetch('/api/wind_data')
+                .then(response => response.json())
+                .then(response => {
+                    const grid = document.getElementById('anemometer-grid');
+                    const updateTime = document.getElementById('update-time');
+                    const connectionStatus = document.getElementById('connection-status');
+                    const activeCount = document.getElementById('active-count');
+                    const dataTime = document.getElementById('data-time');
+                    
+                    console.log('API Response:', response); // Debug log
+                    
+                    // Update status display
+                    updateTime.textContent = new Date().toLocaleTimeString();
+                    connectionStatus.textContent = response.connection_active ? 'Connected' : 'Disconnected';
+                    connectionStatus.style.color = response.connection_active ? '#28a745' : '#dc3545';
+                    
+                    if (!response.success || !response.data || Object.keys(response.data).length === 0) {
+                        grid.innerHTML = '<div class="no-data">No wind data available. Connection status: ' + (response.connection_active ? 'Active' : 'Inactive') + '</div>';
+                        activeCount.textContent = '0';
+                        dataTime.textContent = '-';
+                        return;
+                    }
+                    
+                    const dataKeys = Object.keys(response.data);
+                    activeCount.textContent = dataKeys.length;
+                    
+                    // Get the most recent timestamp from the data
+                    let mostRecentTime = null;
+                    for (const [key, anemometerData] of Object.entries(response.data)) {
+                        if (anemometerData.timestamp) {
+                            const time = new Date(anemometerData.timestamp);
+                            if (!mostRecentTime || time > mostRecentTime) {
+                                mostRecentTime = time;
+                            }
+                        }
+                    }
+                    dataTime.textContent = mostRecentTime ? mostRecentTime.toLocaleTimeString() : '-';
+                    
+                    if (!isInitialized) {
+                        // First time - create all cards
+                        let html = '';
+                        for (const [key, anemometerData] of Object.entries(response.data)) {
+                            html += createWindroseCard(anemometerData.anemometer_id, anemometerData);
+                        }
+                        grid.innerHTML = html;
+                        isInitialized = true;
+                    } else {
+                        // Update existing cards or create new ones
+                        for (const [key, anemometerData] of Object.entries(response.data)) {
+                            const updated = updateNeedleAndData(
+                                anemometerData.anemometer_id, 
+                                anemometerData.port, 
+                                anemometerData
+                            );
+                            
+                            if (!updated) {
+                                // Card doesn't exist, recreate all cards
+                                let html = '';
+                                for (const [k, data] of Object.entries(response.data)) {
+                                    html += createWindroseCard(data.anemometer_id, data);
+                                }
+                                grid.innerHTML = html;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    currentData = response.data;
+                })
+                .catch(error => {
+                    console.error('Error fetching wind data:', error);
+                    document.getElementById('anemometer-grid').innerHTML = 
+                        '<div class="no-data">Error loading wind data: ' + error.message + '</div>';
+                    document.getElementById('connection-status').textContent = 'Error';
+                    document.getElementById('connection-status').style.color = '#dc3545';
+                });
+        }
+
+        // Update data every 2 seconds
+        updateWindData();
+        setInterval(updateWindData, 2000);
+    </script>
+</body>
+</html>
