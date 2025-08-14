@@ -256,8 +256,8 @@
         let isInitialized = false;
 
         function createWindroseCard(anemometerId, data) {
-            const windDirection = data.wind_direction || 0;
-            const windSpeed = data.wind_speed || 0;
+            const windDirection = data.direction || 0;  // Changed from wind_direction
+            const windSpeed = data.speed || 0;          // Changed from wind_speed
             const port = data.port || 'Unknown';
             const temperature = data.temperature || 0;
             
@@ -315,7 +315,7 @@
                         </div>
                         <div class="data-item">
                             <div class="data-label">Components (U,V,W)</div>
-                            <div class="data-value" id="components-${cardId}">${data.u_component?.toFixed(2) || 0}, ${data.v_component?.toFixed(2) || 0}, ${data.w_component?.toFixed(2) || 0}</div>
+                            <div class="data-value" id="components-${cardId}">${data.u?.toFixed(2) || 0}, ${data.v?.toFixed(2) || 0}, ${data.w?.toFixed(2) || 0}</div>
                         </div>
                         <div class="data-item">
                             <div class="data-label">Last Update</div>
@@ -327,6 +327,12 @@
         }
 
         function updateNeedleAndData(anemometerId, port, data) {
+            // Safety check for port parameter
+            if (!port) {
+                console.warn('Port is undefined for anemometer:', anemometerId);
+                return false;
+            }
+            
             const cardId = `anemometer-${anemometerId}-${port.replace(':', '')}`;
             const needle = document.getElementById(`needle-${cardId}`);
             const speedElement = document.getElementById(`speed-${cardId}`);
@@ -337,13 +343,13 @@
             
             if (needle && speedElement && directionElement) {
                 // Update needle position with smooth transition
-                needle.style.transform = `translate(-50%, -100%) rotate(${data.wind_direction || 0}deg)`;
+                needle.style.transform = `translate(-50%, -100%) rotate(${data.direction || 0}deg)`;
                 
                 // Update data values
-                speedElement.textContent = `${(data.wind_speed || 0).toFixed(2)} m/s`;
-                directionElement.textContent = `${(data.wind_direction || 0).toFixed(1)}°`;
+                speedElement.textContent = `${(data.speed || 0).toFixed(2)} m/s`;
+                directionElement.textContent = `${(data.direction || 0).toFixed(1)}°`;
                 tempElement.textContent = `${data.temperature || 0}°C`;
-                componentsElement.textContent = `${data.u_component?.toFixed(2) || 0}, ${data.v_component?.toFixed(2) || 0}, ${data.w_component?.toFixed(2) || 0}`;
+                componentsElement.textContent = `${data.u?.toFixed(2) || 0}, ${data.v?.toFixed(2) || 0}, ${data.w?.toFixed(2) || 0}`;
                 timestampElement.textContent = new Date(data.timestamp).toLocaleTimeString();
                 
                 return true; // Successfully updated

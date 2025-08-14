@@ -256,6 +256,7 @@ def api_wind_data():
         for key, anemometer_data in raw_data.items():
             formatted_data[key] = {
                 'anemometer_id': anemometer_data['anemometer_id'],
+                'port': anemometer_data['port'],
                 'speed': round(anemometer_data['wind_speed'], 2),
                 'direction': round(anemometer_data['wind_direction'], 1),
                 'u': round(anemometer_data['u_component'], 2),
