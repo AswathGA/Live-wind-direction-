@@ -249,12 +249,27 @@ def index():
 def api_wind_data():
     """API endpoint to return the latest wind data"""
     if wind_processor:
-        data = wind_processor.get_latest_data()
+        raw_data = wind_processor.get_latest_data()
+        
+        # Convert datetime objects to ISO format strings for JSON serialization
+        formatted_data = {}
+        for key, anemometer_data in raw_data.items():
+            formatted_data[key] = {
+                'anemometer_id': anemometer_data['anemometer_id'],
+                'speed': round(anemometer_data['wind_speed'], 2),
+                'direction': round(anemometer_data['wind_direction'], 1),
+                'u': round(anemometer_data['u_component'], 2),
+                'v': round(anemometer_data['v_component'], 2),
+                'w': round(anemometer_data['w_component'], 2),
+                'temperature': anemometer_data['temperature'],  # Keep as decimal value
+                'timestamp': anemometer_data['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # Format with milliseconds
+            }
+        
         response = {
             'success': True,
-            'data': data,
-            'connection_active': len(data) > 0,
-            'timestamp': datetime.now().isoformat()
+            'data': formatted_data,
+            'connection_active': len(formatted_data) > 0,
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         }
         return jsonify(response)
     return jsonify({

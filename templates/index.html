@@ -364,7 +364,8 @@
                     console.log('API Response:', response); // Debug log
                     
                     // Update status display
-                    updateTime.textContent = new Date().toLocaleTimeString();
+                    const now = new Date();
+                    updateTime.textContent = now.toLocaleTimeString();
                     connectionStatus.textContent = response.connection_active ? 'Connected' : 'Disconnected';
                     connectionStatus.style.color = response.connection_active ? '#28a745' : '#dc3545';
                     
@@ -388,7 +389,12 @@
                             }
                         }
                     }
-                    dataTime.textContent = mostRecentTime ? mostRecentTime.toLocaleTimeString() : '-';
+                    
+                    if (mostRecentTime) {
+                        dataTime.textContent = mostRecentTime.toLocaleTimeString();
+                    } else {
+                        dataTime.textContent = '-';
+                    }
                     
                     if (!isInitialized) {
                         // First time - create all cards
