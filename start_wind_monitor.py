@@ -20,20 +20,22 @@ def main():
     try:
         # Start the wind monitor
         print("Starting wind monitor server...")
-        python_exe = os.path.join(script_dir, ".venv", "Scripts", "python.exe")
+        # Use system Python instead of virtual environment
         wind_script = os.path.join(script_dir, "wind_monitor1.py")
         
         # Start the server in the background
-        process = subprocess.Popen([python_exe, wind_script], 
+        process = subprocess.Popen([sys.executable, wind_script], 
                                  stdout=subprocess.PIPE, 
                                  stderr=subprocess.PIPE)
         
-        # Wait a moment for server to start
-        time.sleep(3)
+        # Wait a shorter time for server to start
+        time.sleep(2)
         
-        # Open the browser
-        print("Opening web browser...")
-        webbrowser.open('http://localhost:5000')
+    # Open the browser (handled by batch file)
+    # print("Opening web browser...")
+    # webbrowser.open('http://localhost:5000')
+    
+        
         
         print("Wind Monitor started successfully!")
         print("Browser should open automatically")

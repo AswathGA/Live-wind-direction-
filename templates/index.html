@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+    <head>
+        <link rel="icon" type="image/svg+xml" href="/templates/favicon.svg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wind Monitor - Windrose Diagram</title>
@@ -74,10 +75,10 @@
             color: #333;
         }
         
-        .direction-label.north { top: 5px; left: 50%; transform: translateX(-50%); }
-        .direction-label.east { right: 5px; top: 50%; transform: translateY(-50%); }
-        .direction-label.south { bottom: 5px; left: 50%; transform: translateX(-50%); }
-        .direction-label.west { left: 5px; top: 50%; transform: translateY(-50%); }
+        .direction-label.north { top: 20px; left: 50%; transform: translateX(-50%); z-index: 30; }
+        .direction-label.east { right: 20px; top: 50%; transform: translateY(-50%); z-index: 30; }
+        .direction-label.south { bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 30; }
+        .direction-label.west { left: 20px; top: 50%; transform: translateY(-50%); z-index: 30; }
         
         .wind-needle {
             position: absolute;
@@ -342,12 +343,16 @@
             const timestampElement = document.getElementById(`timestamp-${cardId}`);
             
             if (needle && speedElement && directionElement) {
-                // Update needle position with smooth transition
-                needle.style.transform = `translate(-50%, -100%) rotate(${data.direction || 0}deg)`;
+                // Ensure direction is a number and update needle position
+                const direction = Number(data.direction) || 0;
+                
+                // Always update the needle position
+                needle.style.transform = `translate(-50%, -100%) rotate(${direction}deg)`;
+                console.log(`Updating needle for ${cardId} to ${direction}°`); // Debug log
                 
                 // Update data values
                 speedElement.textContent = `${(data.speed || 0).toFixed(2)} m/s`;
-                directionElement.textContent = `${(data.direction || 0).toFixed(1)}°`;
+                directionElement.textContent = `${direction.toFixed(1)}°`;
                 tempElement.textContent = `${data.temperature || 0}°C`;
                 componentsElement.textContent = `${data.u?.toFixed(2) || 0}, ${data.v?.toFixed(2) || 0}, ${data.w?.toFixed(2) || 0}`;
                 timestampElement.textContent = new Date(data.timestamp).toLocaleTimeString();
@@ -411,7 +416,7 @@
                         grid.innerHTML = html;
                         isInitialized = true;
                     } else {
-                        // Update existing cards or create new ones
+                        // Update existing cards efficiently
                         for (const [key, anemometerData] of Object.entries(response.data)) {
                             const updated = updateNeedleAndData(
                                 anemometerData.anemometer_id, 
@@ -442,9 +447,9 @@
                 });
         }
 
-        // Update data every 2 seconds
-        updateWindData();
-        setInterval(updateWindData, 2000);
+    // Update data every 1 second
+    updateWindData();
+    setInterval(updateWindData, 1000);
     </script>
 </body>
 </html>
