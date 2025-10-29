@@ -243,7 +243,8 @@ def update_data_continuously():
 @app.route('/')
 def index():
     """Render the home page"""
-    return render_template('index.html')
+    response = render_template('index.html')
+    return response
 
 @app.route('/api/wind_data')
 def api_wind_data():
@@ -266,10 +267,50 @@ def api_wind_data():
                 'timestamp': anemometer_data['timestamp'].strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]  # Format with milliseconds
             }
         
+        # Add information about expected anemometers based on actual log data
+        expected_anemometers = {
+            'COM3': ['A', 'D', 'H', 'I', 'M', 'N', 'P', 'Q', 'S', 'T', 'V'],
+            'COM4': ['B', 'E', 'F', 'G', 'J', 'L', 'O', 'U', 'X', 'Z']
+        }
+        
+        # Calculate active vs expected counts
+        total_expected = sum(len(ids) for ids in expected_anemometers.values())
+        active_count = len(formatted_data)
+        
+        # Create detailed status for each anemometer
+        anemometer_status = {}
+        
+        # Extract active anemometer IDs safely
+        active_anemometers = set()
+        for key, data in formatted_data.items():
+            if isinstance(data, dict) and 'anemometer_id' in data:
+                active_anemometers.add(data['anemometer_id'])
+        
+        for port, anemometer_ids in expected_anemometers.items():
+            anemometer_status[port] = {}
+            for anem_id in anemometer_ids:
+                anemometer_status[port][anem_id] = {
+                    'id': anem_id,
+                    'active': anem_id in active_anemometers,
+                    'last_seen': None
+                }
+                # Add last seen timestamp for active anemometers
+                for key, data_item in formatted_data.items():
+                    if isinstance(data_item, dict) and data_item.get('anemometer_id') == anem_id:
+                        anemometer_status[port][anem_id]['last_seen'] = data_item['timestamp']
+                        break
+        
         response = {
             'success': True,
             'data': formatted_data,
             'connection_active': len(formatted_data) > 0,
+            'expected_anemometers': expected_anemometers,
+            'anemometer_status': anemometer_status,
+            'stats': {
+                'active_count': active_count,
+                'expected_count': total_expected,
+                'inactive_count': total_expected - active_count
+            },
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         }
         return jsonify(response)
@@ -277,6 +318,12 @@ def api_wind_data():
         'success': False,
         'data': {},
         'connection_active': False,
+        'expected_anemometers': {},
+        'stats': {
+            'active_count': 0,
+            'expected_count': 0,
+            'inactive_count': 0
+        },
         'error': 'No data available'
     })
 
