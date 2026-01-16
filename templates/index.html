@@ -306,6 +306,10 @@
                     <div class="update-value" id="active-count">0</div>
                 </div>
                 <div class="update-detail">
+                    <div class="update-label">Inactive Anemometers</div>
+                    <div class="update-value" id="inactive-count">0</div>
+                </div>
+                <div class="update-detail">
                     <div class="update-label">Last Data Time</div>
                     <div class="update-value" id="data-time">-</div>
                 </div>
@@ -314,6 +318,9 @@
             <!-- Enhanced Anemometer Status Panel -->
             <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                 <div style="font-weight: bold; margin-bottom: 10px; color: #333;">Anemometer Status</div>
+                <div id="anemometer-status-summary" class="anemometer-status-card" style="margin-bottom: 8px;">
+                    <!-- Summary populated dynamically -->
+                </div>
                 <div id="anemometer-status" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                     <!-- Anemometer status cards will be populated here -->
                 </div>
@@ -328,6 +335,7 @@
 
         function updateAnemometerStatus(response) {
             const anemometerStatusGrid = document.getElementById('anemometer-status');
+            const anemometerStatusSummary = document.getElementById('anemometer-status-summary');
             const expectedAnemometers = response.expected_anemometers || {};
             const anemometerStatus = response.anemometer_status || {};
             const stats = response.stats || {};
@@ -338,6 +346,7 @@
             // Create status cards for all expected anemometers
             let totalActive = 0;
             let totalExpected = 0;
+            const inactiveList = [];
             
             for (const [port, anemometerIds] of Object.entries(expectedAnemometers)) {
                 totalExpected += anemometerIds.length;
@@ -348,6 +357,7 @@
                     const lastSeen = statusInfo ? statusInfo.last_seen : null;
                     
                     if (isActive) totalActive++;
+                    else inactiveList.push(`${port}-${anemometerId}`);
                     
                     const statusClass = isActive ? 'active' : 'inactive';
                     const statusText = isActive ? 'Connected' : 'Not Connected';
@@ -364,6 +374,23 @@
                     `;
                     
                     anemometerStatusGrid.appendChild(statusCard);
+                }
+            }
+
+            // Update summary card
+            if (anemometerStatusSummary) {
+                if (inactiveList.length > 0) {
+                    anemometerStatusSummary.className = 'anemometer-status-card inactive';
+                    anemometerStatusSummary.innerHTML = `
+                        <div class="status-text">Inactive: ${inactiveList.length}</div>
+                        <div class="status-time">Missing: ${inactiveList.join(', ')}</div>
+                    `;
+                } else {
+                    anemometerStatusSummary.className = 'anemometer-status-card active';
+                    anemometerStatusSummary.innerHTML = `
+                        <div class="status-text">All anemometers active</div>
+                        <div class="status-time">${new Date().toLocaleTimeString()}</div>
+                    `;
                 }
             }
         }
@@ -471,6 +498,7 @@
                     const updateTime = document.getElementById('update-time');
                     const connectionStatus = document.getElementById('connection-status');
                     const activeCount = document.getElementById('active-count');
+                    const inactiveCount = document.getElementById('inactive-count');
                     const dataTime = document.getElementById('data-time');
                     
                     // Update status display
@@ -490,8 +518,18 @@
                     const stats = response.stats || {};
                     
                     // Update count display with more detail
-                    activeCount.textContent = `${stats.active_count || dataKeys.length}/${stats.expected_count || '?'}`;
+                    // Use nullish coalescing to avoid treating 0 as falsy
+                    const activeDisplay = (stats.active_count ?? dataKeys.length);
+                    const expectedDisplay = (stats.expected_count ?? '?');
+                    activeCount.textContent = `${activeDisplay}/${expectedDisplay}`;
                     activeCount.style.color = (stats.active_count === stats.expected_count) ? '#28a745' : '#dc3545';
+                    if (inactiveCount) {
+                        const inactive = (typeof stats.inactive_count === 'number')
+                            ? stats.inactive_count
+                            : ((stats.expected_count || dataKeys.length) - (stats.active_count || dataKeys.length));
+                        inactiveCount.textContent = `${inactive}`;
+                        inactiveCount.style.color = inactive > 0 ? '#dc3545' : '#28a745';
+                    }
                     
                     // Get the most recent timestamp from the data
                     let mostRecentTime = null;

@@ -60,7 +60,8 @@ class WindDataProcessor:
                             if line.strip():  # Skip empty lines
                                 data = self.parse_log_line(line.strip())
                                 if data:
-                                    key = f"{data['anemometer_id']}_{data['port']}"
+                                    # Use a consistent key format: PORT_ID
+                                    key = f"{data['port']}_{data['anemometer_id']}"
                                     self.latest_data[key] = data
                                     processed_count += 1
                                     if self.debug_mode:
@@ -273,33 +274,43 @@ def api_wind_data():
             'COM4': ['B', 'E', 'F', 'G', 'J', 'L', 'O', 'U', 'X', 'Z']
         }
         
-        # Calculate active vs expected counts
+        # Calculate expected count
         total_expected = sum(len(ids) for ids in expected_anemometers.values())
-        active_count = len(formatted_data)
         
         # Create detailed status for each anemometer
         anemometer_status = {}
         
-        # Extract active anemometer IDs safely
-        active_anemometers = set()
+        # Extract active anemometer pairs (port + id) to avoid cross-port mismatches
+        active_pairs = set()
         for key, data in formatted_data.items():
-            if isinstance(data, dict) and 'anemometer_id' in data:
-                active_anemometers.add(data['anemometer_id'])
+            if isinstance(data, dict) and 'anemometer_id' in data and 'port' in data:
+                active_pairs.add((data['port'], data['anemometer_id']))
         
         for port, anemometer_ids in expected_anemometers.items():
             anemometer_status[port] = {}
             for anem_id in anemometer_ids:
                 anemometer_status[port][anem_id] = {
                     'id': anem_id,
-                    'active': anem_id in active_anemometers,
+                    'active': (port, anem_id) in active_pairs,
                     'last_seen': None
                 }
                 # Add last seen timestamp for active anemometers
                 for key, data_item in formatted_data.items():
-                    if isinstance(data_item, dict) and data_item.get('anemometer_id') == anem_id:
+                    if (
+                        isinstance(data_item, dict)
+                        and data_item.get('anemometer_id') == anem_id
+                        and data_item.get('port') == port
+                    ):
                         anemometer_status[port][anem_id]['last_seen'] = data_item['timestamp']
                         break
         
+        # Derive accurate active count from status (unique expected sensors)
+        active_count = 0
+        for port, ids in anemometer_status.items():
+            for _, status in ids.items():
+                if status.get('active'):
+                    active_count += 1
+
         response = {
             'success': True,
             'data': formatted_data,
